@@ -13,6 +13,9 @@ import {
   RotateCcw,
   Menu,
   X,
+  MoveLeft,
+  MoveRight,
+  ArrowRight,
 } from "lucide-react";
 
 const App = () => {
@@ -24,13 +27,21 @@ const App = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const fullText = "A blooming developer, Jiyean Lee";
 
+  // Slider State
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const sliderRef = useRef<HTMLDivElement>(null);
+
   // Mini Games State
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [isJumping, setIsJumping] = useState(false);
   const [jumpScore, setJumpScore] = useState(0);
   const [isGameOverJump, setIsGameOverJump] = useState(false);
   const [basketPos, setBasketPos] = useState(50);
-  const [items, setItems] = useState<Array<{ id: number; x: number; y: number }>>([]);
+  const [items, setItems] = useState<
+    Array<{ id: number; x: number; y: number }>
+  >([]);
   const [catchScore, setCatchScore] = useState(0);
   const [isGameOverCatch, setIsGameOverCatch] = useState(false);
 
@@ -38,7 +49,8 @@ const App = () => {
   const playerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleMouseMove = (e: { clientX: any; clientY: any; }) => setMousePos({ x: e.clientX, y: e.clientY });
+    const handleMouseMove = (e: { clientX: any; clientY: any }) =>
+      setMousePos({ x: e.clientX, y: e.clientY });
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("scroll", handleScroll);
@@ -69,6 +81,26 @@ const App = () => {
   }, []);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
+  // Slider Logic
+  const handleMouseDown = (e: { pageX: number }) => {
+    if (!sliderRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - sliderRef.current.offsetLeft);
+    setScrollLeft(sliderRef.current.scrollLeft);
+  };
+  const handleMouseLeave = () => setIsDragging(false);
+  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseMoveSlider = (e: {
+    preventDefault: () => void;
+    pageX: number;
+  }) => {
+    if (!isDragging || !sliderRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - sliderRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    sliderRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   // --- Game 1 Logic: Jump ---
   const handleJump = () => {
@@ -293,6 +325,7 @@ const App = () => {
       icon: <Monitor className="w-12 h-12" />,
       github: "https://github.com",
       demo: "https://demo.com",
+      accent: "from-yellow-400 to-pink-500",
     },
     {
       title: "Diamond Age",
@@ -302,6 +335,7 @@ const App = () => {
       icon: <Smartphone className="w-12 h-12" />,
       github: "https://github.com",
       demo: "https://demo.com",
+      accent: "from-blue-400 to-green-400",
     },
     {
       title: "Global Link",
@@ -311,6 +345,7 @@ const App = () => {
       icon: <Globe className="w-12 h-12" />,
       github: "https://github.com",
       demo: "https://demo.com",
+      accent: "from-purple-400 to-blue-400",
     },
     {
       title: "Data Core",
@@ -320,6 +355,7 @@ const App = () => {
       icon: <Database className="w-12 h-12" />,
       github: "https://github.com",
       demo: "https://demo.com",
+      accent: "from-green-400 to-yellow-400",
     },
   ];
 
@@ -777,62 +813,103 @@ const App = () => {
             backgroundSize: "30px 30px",
           }}
         />
-
-        <div className="max-w-6xl mx-auto relative z-10">
-          <h2 className="text-5xl font-black uppercase italic tracking-tighter mb-24">
-            Selected Works
-          </h2>
-          <div className="grid md:grid-cols-2 gap-12">
+        <div className="max-w-[1400px] mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+            <div>
+              <p className="text-yellow-400 text-[10px] font-black uppercase tracking-[0.5em] mb-4">
+                Portfolio Case Studies
+              </p>
+              <h2 className="text-6xl md:text-9xl font-black uppercase italic tracking-tighter leading-[0.8]">
+                Selected
+                <br />
+                Works
+              </h2>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest opacity-40">
+              <MoveLeft size={16} /> Drag to explore <MoveRight size={16} />
+            </div>
+          </div>
+          <div
+            ref={sliderRef}
+            className="flex gap-8 overflow-x-hidden cursor-grab active:cursor-grabbing pb-20 -mx-4 px-4 transition-transform duration-500 ease-out select-none"
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMoveSlider}
+          >
             {projects.map((proj, i) => (
               <div
                 key={i}
-                className={`group flex flex-col ${colors.projectCard} border ${colors.border} overflow-hidden transition-all hover:-translate-y-4 hover:shadow-[20px_20px_0_rgba(0,0,0,0.1)]`}
+                className={`flex-shrink-0 w-[85vw] md:w-[600px] h-[700px] relative group ${colors.projectCard} border ${colors.border} rounded-2xl overflow-hidden`}
               >
+                {/* Visual Identity Background */}
                 <div
-                  className={`h-72 flex items-center justify-center ${isDarkMode ? "bg-[#1a1a1a]" : "bg-[#ebebeb]"} relative overflow-hidden`}
-                >
-                  <div
-                    className="absolute inset-0 opacity-10 group-hover:scale-110 transition-transform duration-700"
-                    style={{
-                      backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.1) 20px, rgba(255,255,255,0.1) 40px)`,
-                    }}
-                  />
-                  <div className="relative z-10 text-yellow-400 group-hover:scale-125 transition-transform duration-500">
-                    {proj.icon}
-                  </div>
+                  className={`absolute inset-0 bg-gradient-to-br ${proj.accent} opacity-40 group-hover:opacity-60 transition-opacity duration-700`}
+                />
+
+                {/* 배경 SVG 패턴 */}
+                <div
+                  className="absolute inset-0 opacity-10 group-hover:scale-110 transition-transform duration-1000"
+                  style={{
+                    backgroundImage:
+                      "url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')",
+                  }}
+                />
+
+                {/* 큰 숫자 div - 주석 해제 적용 */}
+                <div className="absolute bottom-[-40px] right-[-20px] text-[200px] font-black italic opacity-3 select-none group-hover:opacity-8 group-hover:-translate-x-10 transition-all duration-700">
+                  {i + 1}
                 </div>
-                <div className="p-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-3xl font-black uppercase tracking-tighter leading-tight">
-                      {proj.title}
-                    </h3>
-                    <div className="flex space-x-3">
-                      <a
-                        href={proj.github}
-                        className="p-2 border border-current hover:bg-yellow-400 hover:text-black transition-colors"
-                      >
-                        <Github size={16} />
-                      </a>
-                      <a
-                        href={proj.demo}
-                        className="p-2 border border-current hover:bg-yellow-400 hover:text-black transition-colors"
-                      >
-                        <ExternalLink size={16} />
-                      </a>
+
+                <div className="relative h-full p-12 flex flex-col justify-between">
+                  {/* Top Bar */}
+                  <div className="flex justify-between items-start">
+                    <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 text-yellow-400 group-hover:rotate-12 transition-transform duration-500">
+                      {proj.icon}
                     </div>
                   </div>
-                  <p className="text-sm opacity-60 leading-relaxed mb-8">
-                    {proj.desc}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {proj.tech.map((t) => (
-                      <span
-                        key={t}
-                        className="text-[9px] font-black uppercase px-2 py-1 bg-yellow-400/10 text-yellow-400 border border-yellow-400/20"
-                      >
-                        {t}
-                      </span>
-                    ))}
+
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">
+                      {proj.category}
+                    </span>
+                    <div className="flex gap-2">
+                      {proj.tech.slice(0, 2).map((t, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[8px] border border-current px-2 py-0.5 rounded-full"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Main Info */}
+                  <div className="space-y-8 translate-y-12 group-hover:translate-y-0 transition-transform duration-500">
+                    <h3 className="text-5xl md:text-6xl font-black uppercase tracking-tighter leading-none mb-6">
+                      {proj.title}
+                    </h3>
+                    <p className="text-sm opacity-60 leading-relaxed max-w-md line-clamp-3 group-hover:line-clamp-none transition-all duration-500">
+                      {proj.desc}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-6 opacity-0 group-hover:opacity-100 transition-all duration-700 delay-100">
+                    <a
+                      href={proj.demo}
+                      className="flex items-center gap-3 bg-yellow-400 text-black px-6 py-3 font-black text-xs uppercase tracking-widest rounded-full hover:scale-110 active:scale-95 transition-all"
+                      onMouseEnter={() => setIsHovering(true)}
+                      onMouseLeave={() => setIsHovering(false)}
+                    >
+                      Launch Demo <ArrowRight size={16} />
+                    </a>
+                    <a href={proj.github}>
+                      <Github
+                        size={20}
+                        className="opacity-70 hover:opacity-100"
+                      />
+                    </a>
                   </div>
                 </div>
               </div>
